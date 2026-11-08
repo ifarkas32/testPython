@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 app = FastAPI(title="Egyszerű API")
@@ -16,6 +19,11 @@ class ItemIn(BaseModel):
 @app.get("/")
 def root():
     return {"status": "ok", "message": "Az API működik"}
+
+
+@app.get("/test", response_class=HTMLResponse, include_in_schema=False)
+def test_page():
+    return (Path(__file__).parent / "test_page.html").read_text(encoding="utf-8")
 
 
 @app.get("/health")

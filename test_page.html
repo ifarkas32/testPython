@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Test Page</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+  button { padding: .45rem .9rem; border: 0; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
+  button.del { background: #dc2626; }
+  input { padding: .4rem; border: 1px solid #ccc; border-radius: 6px; margin-right: .4rem; }
+  pre { background: #f5f5f5; padding: .8rem; border-radius: 6px; overflow: auto; min-height: 3rem; }
+  .row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin-bottom: .5rem; }
+  .ok { color: #16a34a; } .err { color: #dc2626; }
+</style>
+</head>
+<body>
+<h1>FastAPI test page <small id="status"></small></h1>
+
+<section>
+  <h3>Health</h3>
+  <div class="row">
+    <button onclick="call('GET','/')">GET /</button>
+    <button onclick="call('GET','/health')">GET /health</button>
+  </div>
+</section>
+
+<section>
+  <h3>Create item</h3>
+  <div class="row">
+    <input id="name" placeholder="name" value="apple">
+    <input id="price" type="number" step="0.01" placeholder="price" value="1.5">
+    <button onclick="createItem()">POST /items</button>
+  </div>
+</section>
+
+<section>
+  <h3>Items</h3>
+  <div class="row">
+    <button onclick="call('GET','/items')">GET /items</button>
+    <input id="itemId" type="number" placeholder="id" style="width:80px">
+    <button onclick="call('GET','/items/'+val('itemId'))">GET /items/{id}</button>
+    <button class="del" onclick="call('DELETE','/items/'+val('itemId'))">DELETE /items/{id}</button>
+  </div>
+</section>
+
+<section>
+  <h3>Response</h3>
+  <div id="meta"></div>
+  <pre id="out">—</pre>
+</section>
+
+<script>
+const val = id => document.getElementById(id).value;
+
+async function call(method, path, body) {
+  const out = document.getElementById('out');
+  const meta = document.getElementById('meta');
+  const t0 = performance.now();
+  try {
+    const res = await fetch(path, {
+      method,
+      headers: body ? {'Content-Type': 'application/json'} : {},
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const text = await res.text();
+    let data; try { data = JSON.stringify(JSON.parse(text), null, 2); } catch { data = text; }
+    meta.innerHTML = `<b class="${res.ok ? 'ok' : 'err'}">${res.status} ${res.statusText}</b> · ${method} ${path} · ${Math.round(performance.now()-t0)} ms`;
+    out.textContent = data;
+  } catch (e) {
+    meta.innerHTML = `<b class="err">Request failed</b>`;
+    out.textContent = String(e);
+  }
+}
+
+function createItem() {
+  call('POST', '/items', { name: val('name'), price: parseFloat(val('price')) || 0 });
+}
+
+fetch('/health').then(r => r.ok ? '✅' : '❌').catch(() => '❌')
+  .then(s => document.getElementById('status').textContent = s);
+</script>
+</body>
+</html>
